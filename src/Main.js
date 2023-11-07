@@ -56,6 +56,10 @@ export const Main = () => {
   const [showMenu, setShowMenu] = useState();
   const [keyword, setKeyword] = useState("");
 
+  const [updatedFilters, setUpdatedFilters] = useState(false);
+
+
+
   const slideIt = (show) => {
     setShowMenu(show);
   };
@@ -104,7 +108,6 @@ export const Main = () => {
       ];
       const fieldsByTag = groupFieldsByTags(lookmlFields);
 
-
       console.log(fieldsByTag, "hi there")
 
       const _filterOptions = fieldsByTag[LOOKML_FIELD_TAGS.filter];
@@ -112,8 +115,29 @@ export const Main = () => {
 
       const _dateFilterOptions = fieldsByTag[LOOKML_FIELD_TAGS.date_filter];
 
+
       const _productMovementfieldOptions =
         fieldsByTag[LOOKML_FIELD_TAGS.productMovementField];
+
+      const _defaultFilterFields = fieldsByTag[LOOKML_FIELD_TAGS.defaultFilters];
+
+      console.log("default filters", _defaultFilterFields)
+
+      if (_defaultFilterFields?.length > 0) {
+        let _filterSet = {}
+        _defaultFilterFields.map(d => {
+          if (_dateFilterOptions.find(({name}) => name === d['name'])) {
+            setSelectedDateFilter(d['name'])
+          } else {
+            _filterSet[d['name']] = d['default_filter_value']
+            setSelectedFilters(_filterSet)
+          }
+        })
+        console.log("filter set",_filterSet)
+
+      } else {
+        console.error("No default filters")
+      }
       // _dimensionToggleFields has the shape { [tag]: field }
       // it gets populated with all the tags that are prefixed with `toggle:`
       const _dimensionToggleFields = Object.fromEntries(
@@ -156,17 +180,18 @@ export const Main = () => {
       setQuickFilterOptions(_quickFilterOptions)
 
 
-      //
-      // console.log("fieldsByTag", fieldsByTag)
-      //
-      // console.log('_quickFilterOptions', _quickFilterOptions)
 
       const _dateRange = fieldsByTag[LOOKML_FIELD_TAGS.dateRange];
+
       let _totalInvoice = undefined;
+
+
       try {
         _totalInvoice = fieldsByTag[LOOKML_FIELD_TAGS.totalInvoices][0];
       } catch (err) {
         console.error(
+
+
           `No total invoice field with the tag ${LOOKML_FIELD_TAGS.totalInvoices}`
         );
       }
@@ -188,8 +213,7 @@ export const Main = () => {
         console.error(`No quick filter fields found using tag ${LOOKML_FIELD_TAGS.quick_filter}`)
       )
 
-     //
-       console.log(defaultFilterSelections)
+
      //
      //  //added  QuickFilter here
      //
@@ -270,7 +294,7 @@ export const Main = () => {
         setAccountGroupField(_accountGroupField);
         let values = await getDefaultValues(_accountGroupField);
         setAccountGroupOptions(
-          values.splice(0, 500).map((v, i) => {
+          values.splice(0, 160).map((v, i) => {
             return v[_accountGroupField["name"]];
           })
         );
@@ -284,6 +308,8 @@ export const Main = () => {
       try {
         setDateRange(_dateRange[0]);
       } catch (error) {
+
+
         console.error(
           `No date range found using tag ${LOOKML_FIELD_TAGS.dateRange}`
         );
@@ -351,9 +377,11 @@ export const Main = () => {
         result_format: "json",
         body: {
           model: LOOKER_MODEL,
-          view: field["view"],
+          view: LOOKER_EXPLORE,
+          //view: field["view"],
           fields: [field["name"]],
           filters: getAllFilters(),
+          limit:10
         },
       })
     );
@@ -365,9 +393,10 @@ export const Main = () => {
         result_format: "json",
         body: {
           model: LOOKER_MODEL,
-          view: field["view"],
+          view: LOOKER_EXPLORE,
           fields: [field["name"]],
           filters: {},
+          limit:10
         },
       })
     );
@@ -437,10 +466,10 @@ export const Main = () => {
             <Tabs
               defaultActiveKey="product-movement"
               onSelect={(k) => setCurrentNavTab(k)}
-              className="mb-0"
+              className="mb-0 inner"
               fill
             >
-              <Tab eventKey="dashboard" title="Purchases Review">
+              <Tab eventKey="dashboard" title="Purchases Review" mountOnEnter={true} unmountOnExit={false}>
                 <PurchasesReview
                   selectedFilters={selectedFilters}
                   setSelectedFilters={setSelectedFilters}
@@ -469,13 +498,12 @@ export const Main = () => {
                   accountGroupField={accountGroupField}
                   keyword={keyword}
                   handleChangeKeyword={handleChangeKeyword}
-                  quickFilterOptions={quickFilterOptions}
                   setSelectedQuickFilter={setSelectedQuickFilter}
                   selectedQuickFilter={selectedQuickFilter}
                   description={{description: <div dangerouslySetInnerHTML={{__html:comment0}} />}}
                 />
               </Tab>
-              <Tab eventKey="product-movement" title="Product Movement Report">
+              <Tab eventKey="product-movement" title="Product Movement Report" mountOnEnter={true} unmountOnExit={false}>
                 <Template1
                   currentNavTab={currentNavTab}
                   selectedFilters={selectedFilters}
@@ -506,9 +534,12 @@ export const Main = () => {
                   setSelectedQuickFilter={setSelectedQuickFilter}
                   selectedQuickFilter={selectedQuickFilter}
                   description={{description: <div dangerouslySetInnerHTML={{__html:comment1}} />}}
+                  updatedFilters={updatedFilters}
+                  setUpdatedFilters={setUpdatedFilters}
+
                 />
               </Tab>
-              <Tab eventKey="invoice" title="Invoice Report">
+              <Tab eventKey="invoice" title="Invoice Report" mountOnEnter={true} unmountOnExit={false}>
                 <Template1
                   currentNavTab={currentNavTab}
                   selectedFilters={selectedFilters}
@@ -539,7 +570,7 @@ export const Main = () => {
                   description={{description: <div dangerouslySetInnerHTML={{__html:comment2}} />}}
                 />
               </Tab>
-              <Tab eventKey="auto-sub" title="Auto-Sub Report">
+              <Tab eventKey="auto-sub" title="Auto-Sub Report" mountOnEnter={true} unmountOnExit={false}>
                 <Template1
                   currentNavTab={currentNavTab}
                   selectedFilters={selectedFilters}
@@ -570,7 +601,7 @@ export const Main = () => {
                   description={{description: <div dangerouslySetInnerHTML={{__html:comment3}} />}}
                 />
               </Tab>
-              <Tab eventKey="id" title="Inflation/Deflation Report">
+              <Tab eventKey="id" title="Inflation/Deflation Report" mountOnEnter={true} unmountOnExit={false}>
                 <InflationDeflation
                   currentNavTab={currentNavTab}
                   selectedFilters={selectedFilters}

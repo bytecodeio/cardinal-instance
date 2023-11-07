@@ -1,10 +1,9 @@
-export const LOOKER_MODEL = "order_express";
-export const LOOKER_EXPLORE = "time_detail_cv";
+export const LOOKER_MODEL = "rebecca_thompson_project";
+export const LOOKER_EXPLORE = "sdt_all_dates";
 
 export const PRODUCT_MOVEMENT_VIS_DASHBOARD_ID =
   // "rebecca_thompson_project::product_movement_details";
-  // "rebecca_thompson_project::product_movement_report_tab";
-  "order_express::product_movement_report_tab";
+  "rebecca_thompson_project::product_movement_report_tab";
 
 export const LOOKML_FIELD_TAGS = {
   filter: "filter: product_movement",
@@ -14,5 +13,6 @@ export const LOOKML_FIELD_TAGS = {
   quick_filter: "quick_filter: product_movement",
   totalInvoices: "total_invoices",
   accountGroups: "account_group",
-  togglePrefix: "toggle: "
+  togglePrefix: "toggle: ",
+  defaultFilters: "default_filter: purchase_review"
 };

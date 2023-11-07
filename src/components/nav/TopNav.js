@@ -1,17 +1,41 @@
-import React from "react";
+import React,{useContext} from "react";
 
 import { Accordion, Button } from "react-bootstrap";
+import { getApplicationTabs, getApplications } from "../../utils/writebackService";
+import { ExtensionContext } from "@looker/extension-sdk-react";
+import { groupBy } from "../../utils/globalFunctions";
+import { useState } from "react";
 
 function TopNav(props) {
+  const extensionContext = useContext(ExtensionContext);
+  const sdk = extensionContext.core40SDK;
   const [show5, setShow5] = React.useState();
+
+  const [navList, setNavList] = useState([])
 
   const wrapperRef = React.useRef(null);
 
   React.useEffect(() => {
+    const initialize = async () => {
+      let applications = await getApplications(sdk)
+      setNavList(applications)
+      if (applications.length > 0) {
+        let appList = []
+        for await (let apps of applications) {
+          let tabs = await getApplicationTabs(apps['id'], sdk)
+          apps['tabs'] = tabs
+          appList.push(apps)
+        }
+        console.log("sitemap",appList)
+        setNavList(appList);
+      }
+    }    
+    initialize()
     document.addEventListener("click", handleClickOutside, false);
     return () => {
       document.removeEventListener("click", handleClickOutside, false);
     };
+
   }, []);
 
   const handleClickOutside = (event) => {
@@ -19,6 +43,14 @@ function TopNav(props) {
       setShow5(false);
     }
   };
+
+  const handleClick = (app, tab) => {
+    let host = extensionContext.extensionSDK.lookerHostData;
+    let type = host.hostType == "spartan"? "spartan":"extensions"
+    let url = `${host.hostUrl}/${type}/order_express::${app['route']}/${tab['route']}`
+    console.log(url)
+    extensionContext.extensionSDK.openBrowserWindow(url)
+  }
 
   return (
     <div>
@@ -55,7 +87,18 @@ function TopNav(props) {
           </div>
           <div className="modal-body">
             <Accordion defaultActiveKey={0} className="square">
-              <Accordion.Item eventKey="1">
+            {navList?.map(n => (
+              <Accordion.Item eventKey={n['sort_order']}>
+                <Accordion.Header>{n['name']}</Accordion.Header>
+                <Accordion.Body>
+                  {n['tabs']?.map(tab => (
+                    <a className="blue" onClick={() => handleClick(n,tab)}>{tab['title']}</a>
+                  ))}
+                </Accordion.Body>
+              </Accordion.Item>
+            ))}
+            </Accordion>
+              {/* <Accordion.Item eventKey="1">
                 <Accordion.Header>Functional Build</Accordion.Header>
                 <Accordion.Body>
                   <a className="blue">Tab 1</a>
@@ -63,116 +106,8 @@ function TopNav(props) {
                   <a className="blue">Tab 3</a>
                   <a className="blue">Tab 4</a>
                 </Accordion.Body>
-              </Accordion.Item>
-
-              <Accordion.Item eventKey="2">
-                <Accordion.Header>Department Billing</Accordion.Header>
-                <Accordion.Body>
-                  <a className="blue">Tab 1</a>
-                  <a className="blue">Tab 2</a>
-                  <a className="blue">Tab 3</a>
-                  <a className="blue">Tab 4</a>
-                </Accordion.Body>
-              </Accordion.Item>
-
-              <Accordion.Item eventKey="3">
-                <Accordion.Header>CICD</Accordion.Header>
-                <Accordion.Body>
-                  <a className="blue">Tab 1</a>
-                  <a className="blue">Tab 2</a>
-                  <a className="blue">Tab 3</a>
-                  <a className="blue">Tab 4</a>
-                </Accordion.Body>
-              </Accordion.Item>
-
-              <Accordion.Item eventKey="4">
-                <Accordion.Header>Executive Dashboard</Accordion.Header>
-                <Accordion.Body>
-                  <a className="blue">Tab 1</a>
-                  <a className="blue">Tab 2</a>
-                  <a className="blue">Tab 3</a>
-                  <a className="blue">Tab 4</a>
-                </Accordion.Body>
-              </Accordion.Item>
-
-              <Accordion.Item eventKey="5">
-                <Accordion.Header>Source Opportunities</Accordion.Header>
-                <Accordion.Body>
-                  <a className="blue">Tab 1</a>
-                  <a className="blue">Tab 2</a>
-                  <a className="blue">Tab 3</a>
-                  <a className="blue">Tab 4</a>
-                </Accordion.Body>
-              </Accordion.Item>
-
-              <Accordion.Item eventKey="6">
-                <Accordion.Header>Contract Opportunity</Accordion.Header>
-                <Accordion.Body>
-                  <a className="blue">Tab 1</a>
-                  <a className="blue">Tab 2</a>
-                  <a className="blue">Tab 3</a>
-                  <a className="blue">Tab 4</a>
-                </Accordion.Body>
-              </Accordion.Item>
-              <Accordion.Item eventKey="7">
-                <Accordion.Header>Separation of Duties</Accordion.Header>
-                <Accordion.Body>
-                  <a className="blue">Tab 1</a>
-                  <a className="blue">Tab 2</a>
-                  <a className="blue">Tab 3</a>
-                  <a className="blue">Tab 4</a>
-                </Accordion.Body>
-              </Accordion.Item>
-
-              <Accordion.Item eventKey="8">
-                <Accordion.Header>Back Order Report</Accordion.Header>
-                <Accordion.Body>
-                  <a className="blue">Tab 1</a>
-                  <a className="blue">Tab 2</a>
-                  <a className="blue">Tab 3</a>
-                  <a className="blue">Tab 4</a>
-                </Accordion.Body>
-              </Accordion.Item>
-
-              <Accordion.Item eventKey="9">
-                <Accordion.Header>Invoice Approval</Accordion.Header>
-                <Accordion.Body>
-                  <a className="blue">Tab 1</a>
-                  <a className="blue">Tab 2</a>
-                  <a className="blue">Tab 3</a>
-                  <a className="blue">Tab 4</a>
-                </Accordion.Body>
-              </Accordion.Item>
-
-              <Accordion.Item eventKey="10">
-                <Accordion.Header>QBR</Accordion.Header>
-                <Accordion.Body>
-                  <a className="blue">Tab 1</a>
-                  <a className="blue">Tab 2</a>
-                  <a className="blue">Tab 3</a>
-                  <a className="blue">Tab 4</a>
-                </Accordion.Body>
-              </Accordion.Item>
-
-              <Accordion.Item eventKey="11">
-                <Accordion.Header>Rebate Estimator</Accordion.Header>
-                <Accordion.Body>
-                  <a className="blue">Tab 1</a>
-                  <a className="blue">Tab 2</a>
-                  <a className="blue">Tab 3</a>
-                  <a className="blue">Tab 4</a>
-                </Accordion.Body>
-              </Accordion.Item>
-              <Accordion.Item eventKey="12">
-                <Accordion.Header>Service Level Review</Accordion.Header>
-                <Accordion.Body>
-                  <a className="blue">Tab 1</a>
-                  <a className="blue">Tab 2</a>
-                  <a className="blue">Tab 3</a>
-                  <a className="blue">Tab 4</a>
-                </Accordion.Body>
-              </Accordion.Item>
-            </Accordion>
+              </Accordion.Item> */}
+            
           </div>
         </div>
       </div>

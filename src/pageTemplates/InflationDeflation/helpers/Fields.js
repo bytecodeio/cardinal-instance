@@ -31,7 +31,7 @@ const Fields = ({
 
 
   }
-  // console.log("these are fields", fieldOptions)
+  console.log("these are fields", fieldOptions)
   return (
     <div className="wrapFilters">
       {fieldOptions.map((fieldOption) => (

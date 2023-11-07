@@ -1,26 +1,50 @@
-import React from "react";
+import React, {Fragment, useState, useEffect } from "react";
 import { Button, Form, Modal } from "react-bootstrap";
 
 const AccountGroups = ({
   fieldOptions,
   setSelectedAccountGroup,
-  selectedAccountGroup
+  selectedAccountGroup,
+  showMenu2,
+  setShowMenu2,
+ handleFieldAll
 }) => {
+
+
   function handleFieldSelection(value) {
-    setSelectedAccountGroup((prev) => {
-      if (prev.includes(value)) {
-        return prev.filter((selectedFilter) => selectedFilter !== value);
-      } else {
-        return [...prev, value];
-      }
-    });
+
+      setSelectedAccountGroup((prev) => {
+        if (prev.includes(value)) {
+          return prev.filter((selectedFilter) => selectedFilter !== value);
+        } else {
+          return [...prev, value]
+
+        }
+
+
+      });
+
   }
 
 
+  function handleFieldAll(value) {
+    setSelectedAccountGroup(fieldOptions)
+  }
+// 
+// console.log(fieldOptions)
 
 
   return (
-    <div className="wrapFilters">
+<Fragment>
+
+    {/*<button onClick={handleFieldAll}>hi</button>*/}
+
+
+
+    <div  className={showMenu2 ? "wrapFilters fullScreen" : "wrapFilters"}>
+      <i class="fal fa-times closeOptions" onClick={() => setShowMenu2(false)} ></i>
+
+
       {fieldOptions.map((fieldOption) => (
         <div className="one" key={fieldOption}>
           <Form.Group>
@@ -41,7 +65,9 @@ const AccountGroups = ({
       ))}
     </div>
 
-    // set value to name
+
+</Fragment>
+
   );
 };
 

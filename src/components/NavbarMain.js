@@ -1,23 +1,23 @@
 import React, { useState, useContext, useEffect } from "react";
-import { Container, Nav, Navbar } from "react-bootstrap";
+import { Button, Container, Nav, Navbar } from "react-bootstrap";
 import { ExtensionContext } from "@looker/extension-sdk-react";
 
-const NavbarMain = () => {
+const NavbarMain = ({user}) => {
   const { core40SDK } = useContext(ExtensionContext);
-  const [message, setMessage] = useState();
+  const [message, setMessage] = useState("");
+  const [me, setMe] = useState({});
 
   useEffect(() => {
     const initialize = async () => {
       try {
-        const value = await core40SDK.ok(core40SDK.me());
-        setMessage(`${value.display_name}`);
+        setMessage(`${user.display_name}`);
       } catch (error) {
         setMessage("Error occured getting information about me!");
         console.error(error);
       }
     };
     initialize();
-  }, []);
+  }, [user]);
 
   const [faClass, setFaClass] = useState(true);
 

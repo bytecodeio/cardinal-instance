@@ -45,9 +45,9 @@ export const DateRangeSelector = ({
 
 
   return (
-  <Container fluid>
+  <Container fluid className="padding-0">
     <Row className="fullW mb-1">
-      <Col md={12} lg={8}>
+      <Col md={12} lg={4}>
 
         <p className="mt-0 mb-2 mediumFont">
         {description?.description}
@@ -86,6 +86,34 @@ export const DateRangeSelector = ({
 
 
       </Col>
+
+      <Col md={12} lg={4}>
+
+        <div className="d-flex mt-1 ml2">
+
+          <div className="columnStart mr2">
+            <label>Start Date</label>
+            <Form.Control
+            type="date"
+            value={splitSelectedDateRange()[0]}
+            onChange={(e) => onDateSelection(e, "start")}
+
+            />
+
+          </div>
+          <div className="columnStart">
+            <label>End Date</label>
+            <Form.Control
+            type="date"
+            value={splitSelectedDateRange()[1]}
+            onChange={(e) => onDateSelection(e, "end")}
+            />
+
+          </div>
+
+
+        </div>
+      </Col>
     </Row>
 
 
@@ -94,45 +122,19 @@ export const DateRangeSelector = ({
 
 
     </Col>
-    <Col md={12} lg={4}>
 
-      <div className="d-flex mt-3 ml2">
-
-        <div className="columnStart mr2">
-          <label>Start Date</label>
-          <Form.Control
-          type="date"
-          value={splitSelectedDateRange()[0]}
-          onChange={(e) => onDateSelection(e, "start")}
-
-          />
-
-        </div>
-        <div className="columnStart">
-          <label>End Date</label>
-          <Form.Control
-          type="date"
-          value={splitSelectedDateRange()[1]}
-          onChange={(e) => onDateSelection(e, "end")}
-          />
-
-        </div>
-
-
-      </div>
-    </Col>
   </Row>
 
   <Row className="fullW mt-3 position-relative">
 
-    <Col xs={12} md={12}>
+    <Col xs={12} md={12} className="position-relative">
 
       <div className="d-flex justify-content-end endAbsolute">
 
 
         <Button
         onClick={handleTabVisUpdate}
-        className="btn">Submit Dates
+        className="btn">Update Dates
       </Button>
     </div>
   </Col>

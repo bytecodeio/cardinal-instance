@@ -43,7 +43,7 @@ function HowTo() {
         using the From & To fields.
       </p>
 
-      <div className="grid2 mt-3">
+      <div className="d-flex mt-3">
       <div className="one radio">
       <Form.Group  controlId="formBasicCheckbox15">
         <Form.Check  type="radio" label="MTD" name="filters" />

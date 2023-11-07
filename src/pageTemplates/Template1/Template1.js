@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect, useRef } from "react";
+import React, { useLayoutEffect, useState, useContext, useEffect, useRef } from "react";
 import {
   Accordion,
   Button,
@@ -8,7 +8,10 @@ import {
   Row,
   Spinner,
   Tooltip,
+  Modal
 } from "react-bootstrap";
+import * as $ from "jquery";
+import RangeSlider from 'react-bootstrap-range-slider';
 import { LOOKER_MODEL, LOOKER_EXPLORE } from "../../utils/constants";
 import { ExtensionContext } from "@looker/extension-sdk-react";
 import InnerTableTabs from "../../components/InnerTableTabs";
@@ -19,8 +22,10 @@ import QuickFilter from "./helpers/QuickFilter";
 import AccountGroups from "./helpers/AccountGroups";
 import { DateFilterGroup } from "./helpers/DateFilterGroup";
 import { CurrentSelection } from "./helpers/CurrentSelection";
-import CurrentAccountGroup  from "./helpers/CurrentAccountGroup";
+
 import { DateRangeSelector } from "./helpers/DateRangeSelector";
+
+
 import EmbedTable from "../../components/EmbedTable";
 const Template1 = ({
   currentNavTab,
@@ -56,7 +61,15 @@ const Template1 = ({
   keyword,
   setKeyword,
   handleChangeKeyword,
-  description
+  description,
+  updatedFilters,
+  setUpdatedFilters,
+
+
+  handleFieldsAll,
+  updatedColor,
+  setUpdatedColor
+
 }) => {
   const { core40SDK: sdk } = useContext(ExtensionContext);
   const wrapperRef = useRef(null);
@@ -68,12 +81,23 @@ const Template1 = ({
   const [tabList, setTabList] = useState([]);
   const [currentInnerTab, setCurrentInnerTab] = useState(0);
   const [isFilterChanged, setIsFilterChanged] = useState(false);
-  function handleClearAll() {}
+  const [ value, setValue ] = useState(0);
+  const [ step, setStep ] = useState(1);
+  const [active, setActive] = useState(false);
+  const [faClass, setFaClass] = useState(true);
+  const [toggle, setToggle] = useState(true);
+  const [showMenu2, setShowMenu2] = useState();
+  // const [choseClearAll, setChoseClearAll] = useState(defaultChosenValue);
+  const [choseClearAll, setChoseClearAll] = useState();
+  const [show, setShow] = useState(false);
+  const handleClose = () => setShow(false);
+  const handleShow = () => setShow(true);
+
 
   useEffect(() => {
     if (currentNavTab == tabKey) {
       setIsFilterChanged(true);
-      handleTabVisUpdate();
+      //handleTabVisUpdate();
       //slideIt(show3);
     }
   }, [currentNavTab]);
@@ -81,6 +105,8 @@ const Template1 = ({
   // Fetch default selected fields and filters + query for embedded visualization from Looker dashboard on load
   const [isFetchingDefaultDashboard, setIsFetchingDefaultDashboard] =
   useState(true);
+
+
   useEffect(() => {
 
     async function fetchDefaultFieldsAndFilters() {
@@ -106,21 +132,27 @@ const Template1 = ({
 
       setSelectedFields(fields);
 
-      if (Object.keys(getAllFilters()).length == 0) {
-        let defaultedFilters = dashboard_filters.filter(f => {
-         return f.default_value !== null && f.default_value !== undefined && f.field.tags.length > 0
-        })
-        if (defaultedFilters.length > 0) {
-          let filterArr = {...selectedFilters}
-          defaultedFilters.map(f => {
-            let key = f['dimension']
-            filterArr[key] = f['default_value']
-            //addDefaultFilters(f)
-          })
-          setSelectedFilters(filterArr)
-        }
-      }
+
+
+      // console.log("filter",getAllFilters())
+      // if (Object.keys(getAllFilters()).length == 0) {
+      //   let defaultedFilters = dashboard_filters.filter(f => {
+      //    return f.default_value !== null && f.default_value !== undefined && f.field.tags.length > 0
+      //   })
+      //   console.log("defaulted", defaultedFilters)
+      //   if (defaultedFilters.length > 0) {
+      //     let filterArr = {...selectedFilters}
+      //     defaultedFilters.map(f => {
+      //       let key = f['dimension']
+      //       filterArr[key] = f['default_value']
+      //       addDefaultFilters(f)
+      //     })
+      //     //setSelectedFilters(filterArr)
+      //   }
+      //  }
+      //console.log("tile filters", filters)
       //if (filters) setSelectedFilters(filters);
+      //handleTabVisUpdate()
       //setProductMovementVisQid(client_id);
       setIsFetchingDefaultDashboard(false);
     }
@@ -132,15 +164,19 @@ const Template1 = ({
     }
   }, []);
 
-  // const addDefaultFilters = (filter) => {
-  //   console.log("dashboard Filters", filterOptions)
-  //   if (filterOptions.find(f => {return f['name'] == filter['name']})) {
-  //     let selFilters = {...selectedFilters};
-  //     let key = filter['name'];
-  //     selFilters[key] = filter['default_value'];
-  //     setSelectedFilters(selFilters)
-  //   }
-  // }
+  const addDefaultFilters = (filter) => {
+    console.log("dashboard Filters", filterOptions)
+    if (filterOptions.find(f => {return f['name'] == filter['name']})) {
+      let selFilters = {...selectedFilters};
+      let key = filter['name'];
+      selFilters[key] = filter['default_value'];
+      setSelectedFilters(selFilters)
+    }
+  }
+
+  useEffect(() => {
+    console.log("selected filters", selectedFilters)
+  },[selectedFilters])
 
 
   // Fetch the suggestions for each filter field, after fetching all filter fields
@@ -200,9 +236,6 @@ const Template1 = ({
 
     fetchAllFilterSuggestions();
   }, [filterOptions, isFetchingLookmlFields]);
-
-
-  // console.log("one", filterSuggestions)
 
 
 
@@ -265,12 +298,6 @@ const Template1 = ({
   }, [quickFilterOptions, isFetchingLookmlFields]);
 
 
-  // console.log("two", quickFilterSuggestions)
-
-
-
-
-
   // Page loading state
   const [isPageLoading, setIsPageLoading] = useState(true);
   useEffect(() => {
@@ -281,9 +308,9 @@ const Template1 = ({
 
   const renderTooltip = (props) => (
   <Tooltip id="button-tooltip" {...props}>
-    These are the filters you use to query data. Select the accordions
-    individually below to choose the different filter options inside. Once you
-    are done you can choose the "Submit Values" button to update the data.
+    These are the filters and fields you use to query data. Select the accordions
+    individually below to choose the different filter or field options inside. Once you
+    are done you can choose the "Update Values" button to update the data in the table.
   </Tooltip>
   );
 
@@ -310,6 +337,8 @@ const Template1 = ({
               // }
               filters = await getAllFilters();
 
+              console.log("get all filters", filters)
+
               if (isFilterChanged) {
                 updateInnerTabFilters(filters);
               }
@@ -330,6 +359,8 @@ const Template1 = ({
 
               tabs[currentInnerTab]["query"] = client_id;
               setTabList(tabs);
+              setUpdatedFilters(filters)
+
             }
 
             const updateInnerTabFilters = async (filters) => {
@@ -357,11 +388,12 @@ const Template1 = ({
               setIsFilterChanged(false);
             };
 
-            async function handleClearAll() {
-              console.log('handleClearAll')
+            async function doClearAll() {
+
               // setIsDefaultProduct(false);
               setUpdateButtonClicked(true);
               setSelectedFields([]);
+              setSelectedAccountGroup([])
               let tabs = [...tabList];
               let currentTab = tabs[currentInnerTab];
               currentTab["selected_fields"] = [];
@@ -379,14 +411,19 @@ const Template1 = ({
                 setIsFilterChanged(true);
               }
 
+
+              async function clearAllAccounts() {
+                setSelectedAccountGroup([])
+              }
+
               async function handleRestoreDefault() {
-                setIsDefaultProduct(defaultChecked);
-                setUpdateButtonClicked(true);
+
                 let tabs = [...tabList];
-                let currentTab = tabs[currentInnerTab];
-                currentTab["selected_fields"] = currentTab["default_fields"];
+
+                tabs[currentInnerTab]["selected_fields"] = [...tabs[currentInnerTab]["default_fields"]];
                 setTabList(tabs);
               }
+
 
               useEffect((e) => {
                 document.addEventListener("click", handleClickOutside, false);
@@ -401,8 +438,82 @@ const Template1 = ({
                 }
               };
 
+              const handleClick = () => {
+                  setToggle(!toggle);
 
-              // console.log('accountGroupOptions:', accountGroupOptions)
+                setTimeout(() => {
+                  setActive(!active);
+
+                  setFaClass(!faClass);
+                }, 600);
+                };
+
+                //jquery will be removed and changed, leave for now
+
+              $(document).on('click', function(){
+                if ($('.theSelected').height() > 74.8){
+                  $('.theSelected').addClass('theEnd').css({'maxHeight': '76px', "overflow" : "hidden"})
+                  $('.hideThisEnd, .whiteBar').show()
+                }
+                else{
+                  $('.theSelected').removeClass('theEnd').css({'maxHeight': 'unset', "overflow" : "unset"})
+                  $('.hideThisEnd, .whiteBar').hide()
+                }
+
+                  $('#numberCounter').html($('.tab-pane.active.show .theSelected .theOptions').length + $('.tab-pane.active.show .theSelected .dateChoice').length)
+              })
+              $(window).resize(function () {
+                  $(document).trigger('click')
+              });
+              //jquery will be removed and changed, leave for now
+
+
+              // const defaultChosenValue = localStorage.getItem('choseClearAll');
+              // console.log('local storage value first', defaultChosenValue)
+              //
+
+
+              const handleUserYes = () => {
+                // setChoseClearAll("1")
+                // localStorage.setItem('choseClearAll', "1");
+                doClearAll();
+                // setShow(false);
+                setShow(true)
+              }
+
+
+
+              const handleClearAll = () => {
+                setShow(true)
+                // if (defaultChosenValue == "1") {
+                //   setShow(false)
+                //   doClearAll();
+                // } else {
+                //   if(!choseClearAll) {
+                //     setShow(true)
+                //   } else {
+                //     doClearAll();
+                //   }
+                // }
+              }
+
+              const slideIt2 = () =>{
+                setShowMenu2(!showMenu2)
+              }
+              function handleFieldAll(value) {
+                setSelectedAccountGroup(accountGroupOptions)
+              }
+
+              function handleFieldsAll(value) {
+                let tabs = [...tabList];
+                tabs[currentInnerTab]['selected_fields'] = fieldOptions?.map(f => {return f['name']});
+                setTabList(tabs)
+              }
+
+
+              const changeColor = () => {
+                  setUpdatedFilters(true);
+                };
 
 
               return (
@@ -416,7 +527,7 @@ const Template1 = ({
                       <div id="one3" className="openTab bottomShadow" role="button" tabindex="0"
                       onClick={() => {setShowMenu(false);}}>
                       <p className="black m-0 mb-2"><i class="far fa-bars"></i></p>
-                      <p className="m-0"><span className="noMobile">Filter Options</span></p>
+                      <p className="m-0"><span className="noMobile">Selection Options</span></p>
                     </div>
                   </div>
 
@@ -428,7 +539,7 @@ const Template1 = ({
                       className="tooltipHover"
                       >
                       <p className="pb-1">
-                        Filter Options <i className="fal fa-info-circle red"></i>
+                        Selection Options <i className="fal fa-info-circle red"></i>
                       </p>
                     </OverlayTrigger>
                     <div className="closeThisPlease" id="close1">
@@ -440,13 +551,30 @@ const Template1 = ({
                   </div>
                 </div>
                 <div className="modal-actions">
+                <div className="position-relative columnStart mb-3">
+                <label>Search Selections</label>
+                  <input placeholder="" type="search" class="form-control" />
+                  <i class="far fa-search absoluteSearch"></i>
+                </div>
+
+
                   <div className="across">
-                    <Button onClick={handleClearAll} className="btn-clear">
+                    <Button
+                      onClick={handleClearAll}
+                      className="btn-clear"
+                    >
                       Clear All
                     </Button>
+
+
                     <Button
-                    onClick={handleTabVisUpdate}
-                    className="btn">Submit Filters
+                    onClick={() => {
+                     handleTabVisUpdate();
+                     changeColor();
+                   }}
+
+
+                    className="btn">Update Selections
                   </Button>
                 </div>
               </div>
@@ -454,8 +582,8 @@ const Template1 = ({
                 <Accordion defaultActiveKey={0} className="mt-3 mb-3">
                   <Row>
                     <Col xs={12} md={12}>
-                      <Row>
 
+                      <Row>
 
                         {/* Account Groups */}
                         {accountGroupOptions?.length > 0?
@@ -463,14 +591,27 @@ const Template1 = ({
                             <Accordion.Item eventKey="1">
                               <Accordion.Header>Account Groups</Accordion.Header>
                               <Accordion.Body>
+
+                              <span className="allOptions clear first" onClick={handleFieldAll}>Select All</span>
+
+                              <span className="allOptions clear second" onClick={clearAllAccounts}>Clear All</span>
+
+                              <span className="allOptions clear"  onClick={() => slideIt2()}>View All</span>
+
+                              <div className="mb-5"></div>
+
+
                                 <div className="position-relative mb-2">
                                   <input value={keyword} onChange={handleChangeKeyword} placeholder="Search" type="search" class="form-control" />
                                   <i class="far fa-search absoluteSearch"></i>
                                 </div>
                                 <AccountGroups
-                                fieldOptions={keyword !=="" ? accountGroupOptions.filter(option => option.indexOf(keyword)!== -1) : accountGroupOptions}
+                                fieldOptions={keyword !== "" ? accountGroupOptions.filter(option => option.indexOf(keyword)!== -1) : accountGroupOptions}
                                 selectedAccountGroup={selectedAccountGroup}
                                 setSelectedAccountGroup={setSelectedAccountGroup}
+                                showMenu2={showMenu2}
+                                setShowMenu2={setShowMenu2}
+                                handleFieldAll={handleFieldAll}
                                 />
                               </Accordion.Body>
                             </Accordion.Item>
@@ -485,17 +626,31 @@ const Template1 = ({
                             <Accordion.Item eventKey="6">
                               <Accordion.Header>Fields</Accordion.Header>
                               <Accordion.Body>
+                              <div className="mb-5">
+                              <span className="allOptions clear first" onClick={handleFieldsAll}>Select All</span>
+
+                              <span className="allOptions clear restore" onClick={handleRestoreDefault}>Restore Defaults</span>
+
+                              <span className="allOptions clear" onClick={() => slideIt2()}>View All</span>
+                              </div>
+
                                 <Fields
-                                fieldOptions={fieldOptions}
+
                                 setTabList={setTabList}
                                 tabList={tabList}
                                 currentInnerTab={currentInnerTab}
+                                selectedFields={selectedFields}
+                                fieldOptions={fieldOptions}
+                                setSelectedFields={setSelectedFields}
                                 // selectedFields={selectedFields}
                                 // setSelectedFields={setSelectedFields}
                                 // isDefault={isDefaultProduct}
                                 // setIsDefault={setIsDefaultProduct}
                                 updateBtn={updateButtonClicked}
                                 setUpdateBtn={setUpdateButtonClicked}
+                                showMenu2={showMenu2}
+                                setShowMenu2={setShowMenu2}
+                                handleFieldsAll={handleFieldsAll}
                                 />
                               </Accordion.Body>
                             </Accordion.Item>
@@ -503,13 +658,32 @@ const Template1 = ({
                           :''
                         }
 
-                        {/* Filters */}
-                        {filterOptions?.length > 0?
+                        {/*Filters */}
+                        {quickFilterOptions?.length && filterOptions?.length > 0 ?
                           <Col xs={12} md={12}>
                             <Accordion.Item eventKey="5">
                               <Accordion.Header>Filters</Accordion.Header>
                               <Accordion.Body>
+
+                              {/*Quick Filters */}
+                              {
+                                quickFilterOptions?.length > 0?
+                              <QuickFilter
+                              quickFilterOptions={quickFilterOptions}
+                              setSelectedQuickFilter={setSelectedQuickFilter}
+                              selectedQuickFilter={selectedQuickFilter}
+                              updateBtn={updateButtonClicked}
+                              setUpdateBtn={setUpdateButtonClicked}
+                              setIsFilterChanged={setIsFilterChanged}
+                              />
+                              :
+                              ''
+                            }
+
+                            {/* Filters */}
+                            {filterOptions?.length > 0?
                                 <Filters
+
                                 isLoading={isFetchingFilterSuggestions}
                                 filterOptions={filterOptions}
                                 filterSuggestions={filterSuggestions}
@@ -521,38 +695,15 @@ const Template1 = ({
                                 setUpdateBtn={setUpdateButtonClicked}
                                 setIsFilterChanged={setIsFilterChanged}
                                 />
-                              </Accordion.Body>
-                            </Accordion.Item>
-                          </Col>
-                          :''
-                        }
 
-
-                        {/*Quick Filters */}
-                        {
-                          quickFilterOptions?.length > 0?
-                          <Col xs={12} md={12}>
-                            <Accordion.Item eventKey="3">
-                              <Accordion.Header>Quick Filters</Accordion.Header>
-                              <Accordion.Body>
-                                <QuickFilter
-                                quickFilterOptions={quickFilterOptions}
-                                setSelectedQuickFilter={setSelectedQuickFilter}
-                                selectedQuickFilter={selectedQuickFilter}
-                                updateBtn={updateButtonClicked}
-                                setUpdateBtn={setUpdateButtonClicked}
-                                setIsFilterChanged={setIsFilterChanged}
-                                />
+                                :''
+                              }
                               </Accordion.Body>
                             </Accordion.Item>
                           </Col>
                           :
                           ''
                         }
-
-
-
-
 
                         {/* Bookmarks */}
                         <Col xs={12} md={12}>
@@ -565,6 +716,49 @@ const Template1 = ({
                     </Col>
                   </Row>
                 </Accordion>
+
+                <Col xs={12} md={12}>
+                <div className="d-flex flex-column text-center position-relative">
+                <p className="">Top % Products</p>
+
+                <input
+                    value={value}
+                    onChange={changeEvent => {
+                      setStep(1);
+                      setValue(changeEvent.target.value)
+                    }}
+                    placeholder={value}
+                    type="search"
+                    list="steplist"
+                    min="0" max="100"
+                    from="0"
+                    step="1"
+                    className="value"/>
+
+                <input
+                    value={value}
+                    onChange={changeEvent => {
+                      setStep(25);
+                      setValue(changeEvent.target.value)
+                    }}
+                    type="range"
+                    min="0" max="100"
+                    step={step}
+                    list="steplist"
+                    className="range-slider mt-2"/>
+
+                <datalist id="steplist" className="range">
+                    <option label="0">0</option>
+                    <option label="25">25</option>
+                    <option label="50">50</option>
+                    <option label="75">75</option>
+                    <option label="100">100</option>
+                </datalist>
+
+
+                </div>
+                </Col>
+
 
 
 
@@ -601,67 +795,46 @@ const Template1 = ({
 
             </Row>
 
-            <Row className="fullW negativeTop d-flex align-items-center">
+            <Row className="fullW d-flex align-items-center">
               <Col md={12} lg={2}>
 
 
-            <p>
-              <b>Total Invoice:</b> <span className="highlight large">{currentInvoiceCount}</span>
-            </p>
 
+            {currentInvoiceCount != ""?
+            <p>
+              <b>Total Invoices:</b> <span className="highlight large">{currentInvoiceCount}</span>
+            </p>
+            :''
+          }
 
             </Col>
             <Col md={12} lg={3}>
-              <div className="position-relative columnStart">
-              <label>Search Filter</label>
-                <input placeholder="" type="search" class="form-control" />
-                <i class="far fa-search absoluteSearch"></i>
-              </div>
+
             </Col>
 
             <Col md={12} lg={2}>
 
-            <div className="position-relative columnStart">
+            {/*<div className="position-relative columnStart">
             <label>Top % Products</label>
 
               <input  type="search" class="form-control" />
 
-            </div>
+            </div>*/}
+
             </Col>
             </Row>
 
-            <Row className="fullW">
 
-            <Col md={12} lg={12}>
+          <Row className="fullW mt-5 position-relative">
 
-
-
-              <Row className="mt-5 d-flex align-items-center">
+            <Col xs={12} md={11}>
 
 
-
-              <Col md={12} lg={12}>
-
-
-              </Col>
-            </Row>
+              <div  className={toggle ? 'd-flex justify-content-start align-items-center flex-wrap theSelected slide-up' : 'd-flex justify-content-start align-items-center flex-wrap theSelected slide-down'}>
 
 
 
-          </Col>
-
-
-          </Row>
-
-
-          <Row className="fullW mt-4">
-
-            <Col xs={12} md={12}>
-
-              <div className="d-flex justify-content-between align-items-baseline">
-
-              <div className="d-flex justify-content-start align-items-center flex-wrap">
-                <p class="mr-3"><i class="fal fa-filter mr-1"></i>Filters</p>
+              <p class="mr-3"><b>Current Selections:</b></p>
                 <CurrentSelection
                 selectedDateFilter={selectedDateFilter}
                 selectedFilters={selectedFilters}
@@ -676,32 +849,27 @@ const Template1 = ({
 
                 selectedQuickFilter={selectedQuickFilter}
                 setSelectedQuickFilter={setSelectedQuickFilter}
-                />
 
-                <CurrentAccountGroup
-                selectedDateFilter={selectedDateFilter}
-                selectedFilters={selectedFilters}
-                selectedFields={selectedFields}
-                fieldOptions={fieldOptions}
-                setSelectedFields={setSelectedFields}
-                filterOptions={filterOptions}
-                setSelectedFilters={setSelectedFilters}
-                dateFilterOptions={dateFilterOptions}
-                selectedDateRange={selectedDateRange}
-                quickFilterOptions={quickFilterOptions}
                 selectedAccountGroup={selectedAccountGroup}
                 setSelectedAccountGroup={setSelectedAccountGroup}
+                updatedFilters={updatedFilters}
+                setUpdatedFilters={setUpdatedFilters}
+                changeColor={changeColor}
                 />
+
+
 
               </div>
 
-
-                <a onClick={handleRestoreDefault}>
-                  <p class="red bold small mt-4"><u>Restore Default/Saved Filter</u></p>
-                </a>
-
-                </div>
               </Col>
+
+              <div className="hideThisEnd" onClick={handleClick}>
+                <i className={faClass ? 'fas fa-plus-circle' : 'fas fa-minus-circle'}>&nbsp;
+                <span> { active ? "See Less" : "See All"} (<p id="numberCounter"></p>) </span></i>
+
+            </div>
+
+
             </Row>
 
 
@@ -719,6 +887,25 @@ const Template1 = ({
 
             </Col>
           </Row>
+
+
+
+          <Modal show={show} onHide={handleClose} className="clearAllModal">
+                <Modal.Header closeButton>
+
+                </Modal.Header>
+                <Modal.Body><p>Are you sure you want to clear all selections?</p></Modal.Body>
+                <Modal.Footer>
+                <Button className="btn"  onClick={() => {handleUserYes();handleClose()}}>
+                  Yes
+                </Button>
+                  <Button className="btn-clear" onClick={handleClose}>
+                    Cancel <i class="fas fa-ban stop"></i>
+                  </Button>
+
+                  </Modal.Footer>
+              </Modal>
+
           </>
           )}
         </Container>
